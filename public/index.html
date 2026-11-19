@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#5b4be7"><title>CCC Students Attendance</title>
+<style>
+:root{--p:#5b4be7;--bg:#f5f6fb;--ink:#202238;--muted:#73768b;--line:#e8e9f1}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:var(--ink)}
+header{background:white;border-bottom:1px solid var(--line);padding:16px 5%;display:flex;justify-content:space-between;align-items:center}
+.brand{font-weight:800;color:var(--p);font-size:19px}.wrap{max-width:1050px;margin:28px auto;padding:0 16px}
+.card{background:white;border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 5px 22px #24245b08}
+h1{font-size:25px;margin:0 0 8px}h2{font-size:18px;margin:0 0 14px}.muted{color:var(--muted)}
+input,select,button{font:inherit;border-radius:10px;padding:12px;border:1px solid var(--line);width:100%;margin:6px 0}
+button{background:var(--p);color:white;border:0;font-weight:700;cursor:pointer}button.secondary{background:#efedff;color:var(--p)}button.danger{background:#fff0f0;color:#b42318}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.hidden{display:none!important}
+.stat{font-size:28px;font-weight:800;color:var(--p)}.person{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.actions{display:flex;gap:6px;min-width:220px}.actions button{margin:0;padding:9px 10px;font-size:13px}.pill{font-size:12px;background:#f0efff;color:var(--p);padding:5px 9px;border-radius:20px}
+form{max-width:520px}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:560px){header{padding:14px}.row{grid-template-columns:1fr}.person{align-items:flex-start}.actions{width:100%}.actions button{flex:1}}
+</style></head>
+<body>
+<header><div class="brand" id="brand">CCC Students Attendance</div><button id="logout" class="secondary hidden" style="width:auto">Logout</button></header>
+<main class="wrap">
+<section id="setup" class="card hidden"><h1>Welcome! Set up your app</h1><p class="muted">Create your administrator account to get started.</p>
+<form id="setupForm"><input name="appName" placeholder="App name" value="CCC Students Attendance" required><input name="name" placeholder="Administrator name" required><input name="email" type="email" placeholder="Administrator email" required><input name="password" type="password" minlength="8" placeholder="Create password (minimum 8 characters)" required><input name="confirm" type="password" minlength="8" placeholder="Confirm password" required><button>Create account</button></form></section>
+<section id="login" class="card hidden"><h1>Sign in</h1><p class="muted">Sign in to manage attendance.</p><form id="loginForm"><input name="email" type="email" placeholder="Email address" required><input name="password" type="password" placeholder="Password" required><button>Sign in</button></form></section>
+<section id="home" class="hidden">
+<div class="card"><h1 id="welcome">Dashboard</h1><p class="muted">Manage teacher and student attendance from one place.</p><div class="grid"><div><div class="stat" id="teacherCount">0</div><div class="muted">Teachers</div></div><div><div class="stat" id="studentCount">0</div><div class="muted">Students</div></div><div><div class="stat" id="presentCount">0</div><div class="muted">Present today</div></div></div></div>
+<div id="adminTools" class="grid">
+<div class="card"><h2>Add teacher</h2><form id="teacherForm"><input name="name" placeholder="Teacher name" required><input name="email" type="email" placeholder="Teacher email" required><input name="password" type="password" minlength="8" placeholder="Temporary password (8+ characters)" required><button>Add teacher</button></form></div>
+<div class="card"><h2>Add student</h2><form id="studentForm"><input name="name" placeholder="Student name" required><input name="batch" placeholder="Batch / course"><button>Add student</button></form></div></div>
+<div class="card"><h2>Teacher attendance</h2><p class="muted">Each teacher has a separate attendance record.</p><div id="teacherList"></div></div>
+<div class="card"><h2>Student attendance</h2><div id="studentList"></div></div>
+<div class="card" id="selfAttendance"><h2>My teacher attendance</h2><p class="muted">Mark your own attendance for today.</p><div class="actions"><button data-self="Present">Present</button><button class="secondary" data-self="Absent">Absent</button><button class="secondary" data-self="Leave">Leave</button></div></div>
+</section><p id="message" class="muted"></p></main>
+<script>
+const $=s=>document.querySelector(s);let token="",me=null,data=null;
+function show(id){["setup","login","home"].forEach(x=>$("#"+x).classList.toggle("hidden",x!==id));$("#logout").classList.toggle("hidden",!token)}
+function msg(t){$("#message").textContent=t}
+async function api(url,opts={}){const r=await fetch("/api"+url,{...opts,headers:{"Content-Type":"application/json",...(token?{Authorization:"Bearer "+token}:{}),...(opts.headers||{})}});let j={};try{j=await r.json()}catch{}if(!r.ok)throw Error(j.error||"Request failed");return j}
+function formData(form){return Object.fromEntries(new FormData(form).entries())}
+async function start(){try{const s=await api("/setup-status");show(s.setupRequired?"setup":"login")}catch(e){msg("Cannot connect to the server: "+e.message)}}
+$("#setupForm").onsubmit=async e=>{e.preventDefault();const d=formData(e.target);if(d.password!==d.confirm)return msg("Passwords do not match.");try{const r=await api("/setup",{method:"POST",body:JSON.stringify(d)});token=r.token;me=r.user;await dashboard()}catch(x){msg(x.message)}};
+$("#loginForm").onsubmit=async e=>{e.preventDefault();try{const r=await api("/login",{method:"POST",body:JSON.stringify(formData(e.target))});token=r.token;me=r.user;await dashboard()}catch(x){msg(x.message)}};
+$("#logout").onclick=()=>{token="";me=null;show("login");msg("Signed out.")};
+async function dashboard(){try{const r=await api("/me");me=r.user;$("#brand").textContent=r.appName;$("#welcome").textContent="Welcome, "+me.name;data=await api("/dashboard");render();show("home")}catch(e){token="";show("login");msg(e.message)}}
+function todayStatus(type,id){return data.attendance.find(a=>a.personType===type&&a.personId===id&&a.date===data.date)?.status||"Not marked"}
+function buttons(type,id){return ["Present","Absent","Leave"].map(s=>`<button class="${s==="Present"?"":"secondary"}" data-mark="${type}|${id}|${s}">${s}</button>`).join("")}
+function render(){
+$("#teacherCount").textContent=data.teachers.length;$("#studentCount").textContent=data.students.length;$("#presentCount").textContent=data.attendance.filter(a=>a.date===data.date&&a.status==="Present").length;
+$("#adminTools").classList.toggle("hidden",me.role!=="admin");$("#studentList").parentElement.classList.toggle("hidden",me.role!=="admin");$("#selfAttendance").classList.toggle("hidden",me.role!=="teacher");
+$("#teacherList").innerHTML=data.teachers.map(t=>`<div class="person"><div><b>${esc(t.name)}</b><br><small class="muted">${esc(t.email)} · ${todayStatus("teacher",t.id)}</small></div>${me.role==="admin"?`<div class="actions">${buttons("teacher",t.id)}<button class="danger" data-delete="teacher|${t.id}">Delete</button></div>`:""}</div>`).join("")||'<p class="muted">No teachers added yet.</p>';
+$("#studentList").innerHTML=data.students.map(s=>`<div class="person"><div><b>${esc(s.name)}</b><br><small class="muted">${esc(s.batch||"No batch")} · ${todayStatus("student",s.id)}</small></div><div class="actions">${buttons("student",s.id)}<button class="danger" data-delete="student|${s.id}">Delete</button></div></div>`).join("")||'<p class="muted">No students added yet.</p>';
+}
+function esc(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+async function refresh(){data=await api("/dashboard");render()}
+$("#teacherForm").onsubmit=async e=>{e.preventDefault();try{await api("/teachers",{method:"POST",body:JSON.stringify(formData(e.target))});e.target.reset();await refresh();msg("Teacher added.")}catch(x){msg(x.message)}};
+$("#studentForm").onsubmit=async e=>{e.preventDefault();try{await api("/students",{method:"POST",body:JSON.stringify(formData(e.target))});e.target.reset();await refresh();msg("Student added.")}catch(x){msg(x.message)}};
+document.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;try{if(b.dataset.mark){const [personType,personId,status]=b.dataset.mark.split("|");await api("/attendance",{method:"POST",body:JSON.stringify({personType,personId,status,date:data.date})});await refresh();msg("Attendance saved.")}if(b.dataset.delete){const [type,id]=b.dataset.delete.split("|");if(confirm("Delete this "+type+"?")){await api("/"+(type==="teacher"?"teachers/":"students/")+id,{method:"DELETE"});await refresh();}}if(b.dataset.self){await api("/attendance",{method:"POST",body:JSON.stringify({personType:"teacher",personId:me.id,status:b.dataset.self,date:data.date})});await refresh();msg("Your attendance was saved.")}}catch(x){msg(x.message)}});
+start();
+</script></body></html>
