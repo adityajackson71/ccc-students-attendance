@@ -29,6 +29,7 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 const origins = (process.env.ALLOWED_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean);
+console.log('Allowed origins:', origins);
 app.use(cors({ origin(origin, cb) {
   if (!origin && process.env.NODE_ENV !== 'production') return cb(null, true);
   if (origins.length > 0 && origins.includes(origin)) return cb(null, true);
