@@ -1,41 +1,456 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1020"><title>CCC Teacher Attendance</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1020">
+<title>CCC Teacher Attendance</title>
 <style>
 :root{color-scheme:dark;--bg:#080d1b;--panel:#111a2e;--panel2:#17223a;--line:#263653;--text:#eef4ff;--muted:#9aaac5;--blue:#67a5ff;--green:#38d6a3;--red:#ff7185}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0%,#152b50 0,transparent 35%),linear-gradient(140deg,#080d1b,#10172a);color:var(--text);font:15px system-ui,Segoe UI,Arial;min-height:100vh}
-.wrap{width:min(1100px,94%);margin:auto;padding:28px 0 60px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:24px}.logo{width:45px;height:45px;border-radius:15px;background:linear-gradient(135deg,#4d8dff,#8a6cff);display:grid;place-items:center;font-weight:900;box-shadow:0 8px 30px #477cff55}.brand small{display:block;color:var(--muted);letter-spacing:2px;font-size:10px}.brand b{font-size:18px}.card{background:#111a2eeF;border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 18px 55px #0005;backdrop-filter:blur(14px)}.login{max-width:430px;margin:7vh auto}.eyebrow{color:var(--blue);font-size:11px;letter-spacing:2px;font-weight:800}h1{font-size:clamp(27px,5vw,38px);margin:8px 0}p{color:var(--muted);line-height:1.55}.field{display:grid;gap:7px;margin:16px 0}.field label{font-size:13px;color:#c8d5eb}input,select{width:100%;padding:14px 15px;border:1px solid var(--line);border-radius:12px;background:#0b1325;color:var(--text);font:inherit;outline:none}input:focus,select:focus{border-color:var(--blue)}button{border:0;border-radius:12px;padding:12px 16px;font-weight:750;font:inherit;cursor:pointer;transition:.18s}button:disabled{opacity:.5;cursor:wait}.primary{background:linear-gradient(120deg,#4f91ff,#786cff);color:white}.secondary{background:#202e49;color:#eaf1ff;border:1px solid #344666}.danger{background:#482333;color:#ffc1c9}.full{width:100%;margin-top:8px}.msg{min-height:22px;color:#ffc1c9;font-size:13px}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin:18px 0}.stats{display:flex;gap:10px;flex-wrap:wrap}.stat{background:#0b1427;border:1px solid var(--line);border-radius:14px;padding:12px 16px;color:var(--muted)}.stat b{display:block;color:white;font-size:21px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.toolbar>*{flex:1;min-width:140px}.student{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}.student:last-child{border:0}.student b{display:block}.student small{color:var(--muted)}.actions{display:flex;gap:7px;flex-wrap:wrap}.present{background:#123d38;color:#70f0c1}.absent{background:#492433;color:#ff9baa}.chosen{outline:2px solid white;outline-offset:1px}.hidden{display:none!important}.notice{padding:13px;border-radius:12px;background:#172944;color:#c6d9f8;margin:12px 0;font-size:13px}.foot{font-size:12px;color:#7586a3;text-align:center;margin-top:20px}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 10% 0%,#152b50 0,transparent 35%),linear-gradient(140deg,#080d1b,#10172a);color:var(--text);font:15px system-ui,Segoe UI,Arial;min-height:100vh}
+.wrap{width:min(1100px,94%);margin:auto;padding:28px 0 60px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.logo{width:45px;height:45px;border-radius:15px;background:linear-gradient(135deg,#4d8dff,#8a6cff);display:grid;place-items:center;font-weight:900;box-shadow:0 8px 30px #477cff55}
+.brand small{display:block;color:var(--muted);letter-spacing:2px;font-size:10px}
+.brand b{font-size:18px}
+.card{background:#111a2eeF;border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 18px 55px #0005;backdrop-filter:blur(14px)}
+.login{max-width:430px;margin:7vh auto}
+.eyebrow{color:var(--blue);font-size:11px;letter-spacing:2px;font-weight:800}
+h1{font-size:clamp(27px,5vw,38px);margin:8px 0}
+p{color:var(--muted);line-height:1.55}
+.field{display:grid;gap:7px;margin:16px 0}
+.field label{font-size:13px;color:#c8d5eb}
+input,select{width:100%;padding:14px 15px;border:1px solid var(--line);border-radius:12px;background:#0b1325;color:var(--text);font:inherit;outline:none}
+input:focus,select:focus{border-color:var(--blue)}
+button{border:0;border-radius:12px;padding:12px 16px;font-weight:750;font:inherit;cursor:pointer;transition:.18s}
+button:disabled{opacity:.5;cursor:wait}
+.primary{background:linear-gradient(120deg,#4f91ff,#786cff);color:white}
+.secondary{background:#202e49;color:#eaf1ff;border:1px solid #344666}
+.danger{background:#482333;color:#ffc1c9}
+.full{width:100%;margin-top:8px}
+.msg{min-height:22px;color:#ffc1c9;font-size:13px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin:18px 0}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:#0b1427;border:1px solid var(--line);border-radius:14px;padding:12px 16px;color:var(--muted)}
+.stat b{display:block;color:white;font-size:21px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toolbar>*{flex:1;min-width:140px}
+.student{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.student:last-child{border:0}
+.student b{display:block}
+.student small{color:var(--muted)}
+.actions{display:flex;gap:7px;flex-wrap:wrap}
+.present{background:#123d38;color:#70f0c1}
+.absent{background:#492433;color:#ff9baa}
+.chosen{outline:2px solid white;outline-offset:1px}
+.hidden{display:none!important}
+.notice{padding:13px;border-radius:12px;background:#172944;color:#c6d9f8;margin:12px 0;font-size:13px}
+.foot{font-size:12px;color:#7586a3;text-align:center;margin-top:20px}
 @media(max-width:600px){.card{padding:17px}.student{align-items:flex-start;flex-direction:column}.actions{width:100%}.actions button{flex:1}}
-</style></head>
-<body><main class="wrap">
-<header class="brand"><div class="logo">CCC</div><div><b>Career Computer Centre</b><small>STUDENT ATTENDANCE SYSTEM</small></div></header>
-<section id="login" class="card login"><div class="eyebrow">TEACHER WORKSPACE</div><h1>Welcome back.</h1><p>Sign in with your name and the centre's shared password.</p>
-<form id="loginForm"><div class="field"><label for="name">Your name</label><input id="name" maxlength="60" autocomplete="name" required></div><div class="field"><label for="password">Shared password</label><input id="password" type="password" maxlength="128" autocomplete="current-password" required></div><button class="primary full" id="loginBtn">Sign in →</button><div class="msg" id="loginMsg"></div></form></section>
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="brand">
+<div class="logo">CCC</div>
+<div><b>Career Computer Centre</b><small>STUDENT ATTENDANCE SYSTEM</small></div>
+</header>
+
+<section id="login" class="card login">
+<div class="eyebrow">TEACHER WORKSPACE</div>
+<h1>Welcome back.</h1>
+<p>Sign in with your name and the centre's shared password.</p>
+<form id="loginForm">
+<div class="field">
+<label for="name">Your name</label>
+<input id="name" maxlength="60" autocomplete="name" required>
+</div>
+<div class="field">
+<label for="password">Shared password</label>
+<input id="password" type="password" maxlength="128" autocomplete="current-password" required>
+</div>
+<button class="primary full" id="loginBtn">Sign in →</button>
+<div class="msg" id="loginMsg"></div>
+</form>
+</section>
+
 <section id="app" class="hidden">
-<div class="top"><div><div class="eyebrow">TEACHER DASHBOARD</div><h1 id="welcome">Attendance</h1><p>Mark every student present or absent, then save the daily register.</p></div><button class="secondary" id="logout">Sign out</button></div>
-<div class="stats"><div class="stat"><b id="total">0</b>Students in class</div><div class="stat"><b id="marked">0</b>Marked</div><div class="stat"><b id="presentCount">0</b>Present</div><div class="stat"><b id="absentCount">0</b>Absent</div></div>
-<div class="card" style="margin-top:18px"><div class="toolbar"><div class="field"><label for="classSelect">Select class</label><select id="classSelect"></select></div><div class="field"><label for="dateSelect">Attendance date</label><input type="date" id="dateSelect"></div></div><div class="notice">Select Present or Absent for each student. You can undo your latest mark before downloading.</div><div id="studentList"></div>
-<div class="toolbar" style="margin-top:18px"><button class="primary" id="done">Done & Download Daily PNG</button><button class="secondary" id="report">Download 30-Day Register</button></div><div class="msg" id="appMsg"></div></div>
-</section><div class="foot">CCC Students Attendance · Your session expires automatically for security.</div>
+<div class="top">
+<div>
+<div class="eyebrow">TEACHER DASHBOARD</div>
+<h1 id="welcome">Attendance</h1>
+<p>Mark every student present or absent, then save the daily register.</p>
+</div>
+<button class="secondary" id="logout">Sign out</button>
+</div>
+
+<div class="stats">
+<div class="stat"><b id="total">0</b>Students in class</div>
+<div class="stat"><b id="marked">0</b>Marked</div>
+<div class="stat"><b id="presentCount">0</b>Present</div>
+<div class="stat"><b id="absentCount">0</b>Absent</div>
+</div>
+
+<div class="card" style="margin-top:18px">
+<div class="toolbar">
+<div class="field">
+<label for="classSelect">Select class</label>
+<select id="classSelect"></select>
+</div>
+<div class="field">
+<label for="dateSelect">Attendance date</label>
+<input type="date" id="dateSelect">
+</div>
+</div>
+<div class="notice">Select Present or Absent for each student. You can undo your latest mark before downloading.</div>
+<div id="studentList"></div>
+<div class="toolbar" style="margin-top:18px">
+<button class="primary" id="done">Done & Download Daily PNG</button>
+<button class="secondary" id="report">Download 30-Day Register</button>
+</div>
+<div class="msg" id="appMsg"></div>
+</div>
+</section>
+<div class="foot">CCC Students Attendance · Your session expires automatically for security.</div>
 </main>
+
 <script>
-const API='https://ccc-attendance-secure-api.onrender.com';
-const $=s=>document.querySelector(s);let token='',teacherName='',classes=[],students=[],records=[];
-const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function api(path,opts={}){const r=await fetch(API+path,{...opts,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...(opts.headers||{})}});let data={};try{data=await r.json()}catch{}if(!r.ok)throw Error(data.error||`Request failed (${r.status})`);return data}
-function msg(t){$('#appMsg').textContent=t}
-function count(){const vals=students.map(s=>records.find(r=>r.studentId===s.id)?.status).filter(Boolean);$('#total').textContent=students.length;$('#marked').textContent=vals.length;$('#presentCount').textContent=vals.filter(x=>x==='Present').length;$('#absentCount').textContent=vals.filter(x=>x==='Absent').length}
-async function load(){classes=(await api('/api/classes')).classes;$('#classSelect').innerHTML=classes.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');if(!classes.length){$('#studentList').innerHTML='<p>No classes have been created. Ask the administrator to add a class.</p>';return}await loadClass()}
-async function loadClass(){const id=$('#classSelect').value,date=$('#dateSelect').value;if(!id)return;students=(await api('/api/students?classId='+encodeURIComponent(id))).students;records=(await api('/api/attendance?classId='+encodeURIComponent(id)+'&date='+encodeURIComponent(date))).records;draw()}
-function draw(){count();$('#studentList').innerHTML=students.length?students.map(s=>{const r=records.find(x=>x.studentId===s.id);return `<div class="student"><div><b>${esc(s.name)}</b><small>${r?esc(r.status):'Not marked yet'}</small></div><div class="actions"><button class="present ${r?.status==='Present'?'chosen':''}" data-id="${esc(s.id)}" data-status="Present">Present</button><button class="absent ${r?.status==='Absent'?'chosen':''}" data-id="${esc(s.id)}" data-status="Absent">Absent</button>${r?`<button class="secondary" data-undo="${esc(r.id)}">Undo</button>`:''}</div></div>`}).join(''):'<p>No students in this class. Ask the administrator to add students.</p>'}
-$('#studentList').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;try{if(b.dataset.status){await api('/api/attendance',{method:'POST',body:JSON.stringify({classId:$('#classSelect').value,studentId:b.dataset.id,date:$('#dateSelect').value,status:b.dataset.status})})}else if(b.dataset.undo){if(!confirm('Undo this attendance mark?'))return;await api('/api/attendance/'+encodeURIComponent(b.dataset.undo),{method:'DELETE'})}await loadClass();msg('Attendance updated.')}catch(err){msg(err.message)}});
-$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#loginBtn').disabled=true;$('#loginMsg').textContent='Signing in…';try{teacherName=$('#name').value.trim();const d=await api('/api/auth/teacher',{method:'POST',body:JSON.stringify({name:teacherName,password:$('#password').value})});token=d.token;$('#welcome').textContent='Hello, '+d.name;$('#login').classList.add('hidden');$('#app').classList.remove('hidden');const todayDate=new Date();d.setDate(d.getDate()-29);$('#dateSelect').min=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;$('#dateSelect').max=today();$('#dateSelect').value=today();await load()}catch(err){$('#loginMsg').textContent=err.message}finally{$('#loginBtn').disabled=false}});
-$('#classSelect').addEventListener('change',()=>loadClass().catch(e=>msg(e.message)));$('#dateSelect').addEventListener('change',()=>loadClass().catch(e=>msg(e.message)));
-$('#logout').onclick=()=>{token='';records=[];students=[];$('#app').classList.add('hidden');$('#login').classList.remove('hidden');$('#password').value='';$('#loginMsg').textContent='Signed out.'};
-function downloadCanvas(title,subtitle,rows,filename){const c=document.createElement('canvas'),ctx=c.getContext('2d'),w=1200,rowH=48,top=190;c.width=w;c.height=top+rows.length*rowH+80;ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#14213b';ctx.font='bold 34px Arial';ctx.fillText('CAREER COMPUTER CENTRE',55,65);ctx.font='bold 27px Arial';ctx.fillText(title,55,112);ctx.font='18px Arial';ctx.fillStyle='#53627a';ctx.fillText(subtitle,55,150);ctx.fillStyle='#e8eef7';ctx.fillRect(45,170,w-90,48);ctx.fillStyle='#17243a';ctx.font='bold 17px Arial';ctx.fillText('No.',65,201);ctx.fillText('Student name',135,201);ctx.fillText('Status',950,201);rows.forEach((r,i)=>{const y=218+i*rowH;ctx.fillStyle=i%2?'#f5f7fb':'#fff';ctx.fillRect(45,y,w-90,rowH);ctx.fillStyle='#27364e';ctx.font='17px Arial';ctx.fillText(String(i+1),65,y+30);ctx.fillText(r.name,135,y+30);ctx.fillStyle=r.status==='Present'?'#087c5c':r.status==='Absent'?'#c03950':'#59677d';ctx.font='bold 17px Arial';ctx.fillText(r.status,950,y+30)});ctx.fillStyle='#66748a';ctx.font='14px Arial';ctx.fillText('Generated by CCC Students Attendance',55,c.height-30);const a=document.createElement('a');a.download=filename;a.href=c.toDataURL('image/png');a.click()}
-$('#done').onclick=()=>{if(!students.length)return msg('No students to include.');if(records.length<students.length)return msg('Please mark every student Present or Absent before downloading.');const rows=students.map(s=>({name:s.name,status:records.find(r=>r.studentId===s.id)?.status||'Not marked'}));downloadCanvas('Daily Attendance — '+$('#classSelect').selectedOptions[0].textContent,'Date: '+$('#dateSelect').value+'  |  Teacher: '+teacherName,rows,`today-attendance-${$('#classSelect').selectedOptions[0].textContent}-${$('#dateSelect').value}.png`);msg('Daily attendance PNG downloaded.')};
-$('#report').onclick=async()=>{if(!students.length)return msg('No students to include.');$('#report').disabled=true;msg('Preparing 30-day register…');try{const cls=$('#classSelect').value,days=[];for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)}const perDay=await Promise.all(days.map(async date=>({date,records:(await api('/api/attendance?classId='+encodeURIComponent(cls)+'&date='+date)).records})));const rows=students.map(s=>({name:s.name,status:days.map(d=>{const rec=perDay.find(x=>x.date===d).records.find(x=>x.studentId===s.id);return rec?(rec.status==='Present'?'P':'A'):'—'}).join('   ')}));const c=document.createElement('canvas'),ctx=c.getContext('2d'),w=1900,rowH=54,left=40,top=190;c.width=w;c.height=top+rows.length*rowH+70;ctx.fillStyle='#fff';ctx.fillRect(0,0,w,c.height);ctx.fillStyle='#15243c';ctx.font='bold 30px Arial';ctx.fillText('CAREER COMPUTER CENTRE — 30 DAY ATTENDANCE',left,55);ctx.font='16px Arial';ctx.fillStyle='#56647a';ctx.fillText('Class: '+$('#classSelect').selectedOptions[0].textContent+' | P = Present, A = Absent, — = Not marked',left,92);ctx.fillStyle='#e8eef7';ctx.fillRect(left,125,w-80,55);ctx.fillStyle='#17243a';ctx.font='bold 13px Arial';ctx.fillText('Student',left+10,158);days.forEach((d,i)=>{ctx.save();ctx.translate(left+260+i*52,165);ctx.rotate(-Math.PI/3);ctx.fillText(d.slice(5),0,0);ctx.restore()});rows.forEach((r,i)=>{const y=180+i*rowH;ctx.fillStyle=i%2?'#f6f8fb':'#fff';ctx.fillRect(left,y,w-80,rowH);ctx.fillStyle='#26364e';ctx.font='14px Arial';ctx.fillText(r.name,left+10,y+32);r.status.split('   ').forEach((v,j)=>{ctx.fillStyle=v==='P'?'#087c5c':v==='A'?'#c03950':'#9aa4b4';ctx.font='bold 13px Arial';ctx.fillText(v,left+275+j*52,y+32)})});const a=document.createElement('a');a.download=`30-day-attendance-${cls}-${today()}.png`;a.href=c.toDataURL('image/png');a.click();msg('30-day register downloaded.')}catch(e){msg(e.message)}finally{$('#report').disabled=false}};
-</script></body></html>
+const API="https://ccc-attendance-secure-api.onrender.com";
+const $=selector=>document.querySelector(selector);
+
+let token="";
+let teacherName="";
+let classes=[];
+let students=[];
+let records=[];
+
+const today=()=>{
+const date=new Date();
+return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+};
+
+const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({
+"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+}[char]));
+
+async function api(path,options={}){
+const response=await fetch(API+path,{
+...options,
+headers:{
+"Content-Type":"application/json",
+...(token?{Authorization:"Bearer "+token}:{}),
+...(options.headers||{})
+}
+});
+let result={};
+try{result=await response.json()}catch{}
+if(!response.ok)throw Error(result.error||`Request failed (${response.status})`);
+return result;
+}
+
+function msg(text){
+$("#appMsg").textContent=text;
+}
+
+function count(){
+const values=students.map(student=>
+records.find(record=>record.studentId===student.id)?.status
+).filter(Boolean);
+
+$("#total").textContent=students.length;
+$("#marked").textContent=values.length;
+$("#presentCount").textContent=values.filter(status=>status==="Present").length;
+$("#absentCount").textContent=values.filter(status=>status==="Absent").length;
+}
+
+async function load(){
+classes=(await api("/api/classes")).classes;
+$("#classSelect").innerHTML=classes.map(item=>
+`<option value="${esc(item.id)}">${esc(item.name)}</option>`
+).join("");
+
+if(!classes.length){
+$("#studentList").innerHTML="<p>No classes have been created. Ask the administrator to add a class.</p>";
+return;
+}
+await loadClass();
+}
+
+async function loadClass(){
+const classId=$("#classSelect").value;
+const date=$("#dateSelect").value;
+if(!classId)return;
+
+students=(await api("/api/students?classId="+encodeURIComponent(classId))).students;
+records=(await api("/api/attendance?classId="+encodeURIComponent(classId)+"&date="+encodeURIComponent(date))).records;
+draw();
+}
+
+function draw(){
+count();
+
+$("#studentList").innerHTML=students.length?students.map(student=>{
+const record=records.find(item=>item.studentId===student.id);
+return `<div class="student">
+<div><b>${esc(student.name)}</b><small>${record?esc(record.status):"Not marked yet"}</small></div>
+<div class="actions">
+<button class="present ${record?.status==="Present"?"chosen":""}" data-id="${esc(student.id)}" data-status="Present">Present</button>
+<button class="absent ${record?.status==="Absent"?"chosen":""}" data-id="${esc(student.id)}" data-status="Absent">Absent</button>
+${record?`<button class="secondary" data-undo="${esc(record.id)}">Undo</button>`:""}
+</div>
+</div>`;
+}).join(""):"<p>No students in this class. Ask the administrator to add students.</p>";
+}
+
+$("#studentList").addEventListener("click",async event=>{
+const button=event.target.closest("button");
+if(!button)return;
+
+try{
+if(button.dataset.status){
+await api("/api/attendance",{
+method:"POST",
+body:JSON.stringify({
+classId:$("#classSelect").value,
+studentId:button.dataset.id,
+date:$("#dateSelect").value,
+status:button.dataset.status
+})
+});
+}else if(button.dataset.undo){
+if(!confirm("Undo this attendance mark?"))return;
+await api("/api/attendance/"+encodeURIComponent(button.dataset.undo),{
+method:"DELETE"
+});
+}
+await loadClass();
+msg("Attendance updated.");
+}catch(error){
+msg(error.message);
+}
+});
+
+$("#loginForm").addEventListener("submit",async event=>{
+event.preventDefault();
+$("#loginBtn").disabled=true;
+$("#loginMsg").textContent="Signing in…";
+
+try{
+teacherName=$("#name").value.trim();
+
+const loginResult=await api("/api/auth/teacher",{
+method:"POST",
+body:JSON.stringify({
+name:teacherName,
+password:$("#password").value
+})
+});
+
+token=loginResult.token;
+$("#welcome").textContent="Hello, "+loginResult.name;
+
+const minimumDate=new Date();
+minimumDate.setDate(minimumDate.getDate()-29);
+
+$("#dateSelect").min=[
+minimumDate.getFullYear(),
+String(minimumDate.getMonth()+1).padStart(2,"0"),
+String(minimumDate.getDate()).padStart(2,"0")
+].join("-");
+
+$("#dateSelect").max=today();
+$("#dateSelect").value=today();
+
+await load();
+
+$("#login").classList.add("hidden");
+$("#app").classList.remove("hidden");
+
+}catch(error){
+token="";
+$("#loginMsg").textContent=error.message;
+}finally{
+$("#loginBtn").disabled=false;
+}
+});
+
+$("#classSelect").addEventListener("change",()=>{
+loadClass().catch(error=>msg(error.message));
+});
+
+$("#dateSelect").addEventListener("change",()=>{
+loadClass().catch(error=>msg(error.message));
+});
+
+$("#logout").onclick=()=>{
+token="";
+records=[];
+students=[];
+$("#app").classList.add("hidden");
+$("#login").classList.remove("hidden");
+$("#password").value="";
+$("#loginMsg").textContent="Signed out.";
+};
+
+function downloadCanvas(title,subtitle,rows,filename){
+const canvas=document.createElement("canvas");
+const context=canvas.getContext("2d");
+const width=1200;
+const rowHeight=48;
+const top=190;
+
+canvas.width=width;
+canvas.height=top+rows.length*rowHeight+80;
+
+context.fillStyle="#fff";
+context.fillRect(0,0,canvas.width,canvas.height);
+context.fillStyle="#14213b";
+context.font="bold 34px Arial";
+context.fillText("CAREER COMPUTER CENTRE",55,65);
+context.font="bold 27px Arial";
+context.fillText(title,55,112);
+context.font="18px Arial";
+context.fillStyle="#53627a";
+context.fillText(subtitle,55,150);
+context.fillStyle="#e8eef7";
+context.fillRect(45,170,width-90,48);
+context.fillStyle="#17243a";
+context.font="bold 17px Arial";
+context.fillText("No.",65,201);
+context.fillText("Student name",135,201);
+context.fillText("Status",950,201);
+
+rows.forEach((row,index)=>{
+const y=218+index*rowHeight;
+context.fillStyle=index%2?"#f5f7fb":"#fff";
+context.fillRect(45,y,width-90,rowHeight);
+context.fillStyle="#27364e";
+context.font="17px Arial";
+context.fillText(String(index+1),65,y+30);
+context.fillText(row.name,135,y+30);
+context.fillStyle=row.status==="Present"?"#087c5c":row.status==="Absent"?"#c03950":"#59677d";
+context.font="bold 17px Arial";
+context.fillText(row.status,950,y+30);
+});
+
+context.fillStyle="#66748a";
+context.font="14px Arial";
+context.fillText("Generated by CCC Students Attendance",55,canvas.height-30);
+
+const link=document.createElement("a");
+link.download=filename;
+link.href=canvas.toDataURL("image/png");
+link.click();
+}
+
+$("#done").onclick=()=>{
+if(!students.length)return msg("No students to include.");
+if(records.length<students.length)return msg("Please mark every student Present or Absent before downloading.");
+
+const rows=students.map(student=>({
+name:student.name,
+status:records.find(record=>record.studentId===student.id)?.status||"Not marked"
+}));
+
+const className=$("#classSelect").selectedOptions[0].textContent;
+downloadCanvas(
+"Daily Attendance — "+className,
+"Date: "+$("#dateSelect").value+" | Teacher: "+teacherName,
+rows,
+`today-attendance-${className}-${$("#dateSelect").value}.png`
+);
+msg("Daily attendance PNG downloaded.");
+};
+
+$("#report").onclick=async()=>{
+if(!students.length)return msg("No students to include.");
+
+$("#report").disabled=true;
+msg("Preparing 30-day register…");
+
+try{
+const classId=$("#classSelect").value;
+const days=[];
+
+for(let index=29;index>=0;index--){
+const date=new Date();
+date.setDate(date.getDate()-index);
+days.push(`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`);
+}
+
+const perDay=await Promise.all(days.map(async date=>({
+date,
+records:(await api("/api/attendance?classId="+encodeURIComponent(classId)+"&date="+date)).records
+})));
+
+const rows=students.map(student=>({
+name:student.name,
+status:days.map(date=>{
+const dayRecord=perDay.find(item=>item.date===date).records.find(item=>item.studentId===student.id);
+return dayRecord?(dayRecord.status==="Present"?"P":"A"):"—";
+}).join("   ")
+}));
+
+const canvas=document.createElement("canvas");
+const context=canvas.getContext("2d");
+const width=1900;
+const rowHeight=54;
+const left=40;
+const top=190;
+
+canvas.width=width;
+canvas.height=top+rows.length*rowHeight+70;
+
+context.fillStyle="#fff";
+context.fillRect(0,0,width,canvas.height);
+context.fillStyle="#15243c";
+context.font="bold 30px Arial";
+context.fillText("CAREER COMPUTER CENTRE — 30 DAY ATTENDANCE",left,55);
+context.font="16px Arial";
+context.fillStyle="#56647a";
+context.fillText("Class: "+$("#classSelect").selectedOptions[0].textContent+" | P = Present, A = Absent, — = Not marked",left,92);
+context.fillStyle="#e8eef7";
+context.fillRect(left,125,width-80,55);
+context.fillStyle="#17243a";
+context.font="bold 13px Arial";
+context.fillText("Student",left+10,158);
+
+days.forEach((date,index)=>{
+context.save();
+context.translate(left+260+index*52,165);
+context.rotate(-Math.PI/3);
+context.fillText(date.slice(5),0,0);
+context.restore();
+});
+
+rows.forEach((row,index)=>{
+const y=180+index*rowHeight;
+context.fillStyle=index%2?"#f6f8fb":"#fff";
+context.fillRect(left,y,width-80,rowHeight);
+context.fillStyle="#26364e";
+context.font="14px Arial";
+context.fillText(row.name,left+10,y+32);
+
+row.status.split("   ").forEach((value,dayIndex)=>{
+context.fillStyle=value==="P"?"#087c5c":value==="A"?"#c03950":"#9aa4b4";
+context.font="bold 13px Arial";
+context.fillText(value,left+275+dayIndex*52,y+32);
+});
+});
+
+const link=document.createElement("a");
+link.download=`30-day-attendance-${classId}-${today()}.png`;
+link.href=canvas.toDataURL("image/png");
+link.click();
+
+msg("30-day register downloaded.");
+}catch(error){
+msg(error.message);
+}finally{
+$("#report").disabled=false;
+}
+};
+</script>
+</body>
+</html>
