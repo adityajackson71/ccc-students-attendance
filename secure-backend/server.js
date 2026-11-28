@@ -1,3 +1,4 @@
+
 'use strict';
 
 const express = require('express');
@@ -6,15 +7,12 @@ const helmet = require('helmet');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { rateLimit } = require('express-rate-limit');
-const { Firestore } = require('@google-cloud/firestore');
+const { Firestore, FieldValue } = require('@google-cloud/firestore');
 const crypto = require('node:crypto');
 
-const required = [
-  'JWT_SECRET',
-  'TEACHER_PASSWORD_HASH',
-  'ADMIN_SETUP_CODE',
-  'FIREBASE_SERVICE_ACCOUNT'
-];
+const MAX_ADMIN_DEVICES = 10;
+
+const required = ['JWT_SECRET', 'TEACHER_PASSWORD_HASH', 'ADMIN_SETUP_CODE', 'FIREBASE_SERVICE_ACCOUNT'];
 
 for (const key of required) {
   if (!process.env[key]) {
@@ -84,7 +82,7 @@ app.use(cors({
 }));
 
 app.use(express.json({
-  limit: '256kb'
+  limit: '300kb'
 }));
 
 const loginLimiter = rateLimit({
@@ -110,9 +108,10 @@ const sysRef = db.collection('system').doc('security');
 const challenges = new Map();
 const MAX_CHALLENGES = 1000;
 
-const today = () => new Date().toLocaleDateString('en-CA', {
-  timeZone: 'Asia/Kolkata'
-});
+const today = () =>
+  new Date().toLocaleDateString('en-CA', {
+    timeZone: 'Asia/Kolkata'
+  });
 
 const clean = (v, max = 100) =>
   typeof v === 'string'
@@ -152,7 +151,9 @@ function auth(req, res, next) {
     req.session = jwt.verify(
       h.slice(7),
       process.env.JWT_SECRET,
-      { issuer: 'ccc-attendance' }
+      {
+        issuer: 'ccc-attendance'
+      }
     );
 
     next();
@@ -194,7 +195,9 @@ app.get('/', (_req, res) => {
 });
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true });
+  res.json({
+    ok: true
+  });
 });
 
 // Teacher login
@@ -236,7 +239,6 @@ app.post('/api/auth/challenge', loginLimiter, async (_req, res) => {
   });
 });
 
-// Backward compatibility with the previously enrolled single device
 function adminDeviceList(data) {
   if (Array.isArray(data?.adminDevices)) {
     return data.adminDevices;
@@ -286,7 +288,7 @@ function hashInvite(code) {
     .digest('hex');
 }
 
-// Admin login with registered device verification
+// Admin authentication
 app.post('/api/auth/admin', loginLimiter, async (req, res) => {
   const name = clean(req.body?.name, 60);
   const password = req.body?.password;
@@ -296,7 +298,8 @@ app.post('/api/auth/admin', loginLimiter, async (req, res) => {
     signature
   } = req.body || {};
 
-  const deviceId = clean(req.body?.deviceId, 80) || 'legacy';
+  const deviceId =
+    clean(req.body?.deviceId, 80) || 'legacy';
 
   if (!name || !await verifySharedPassword(password)) {
     return res.status(401).json({
@@ -364,16 +367,19 @@ app.post('/api/auth/admin', loginLimiter, async (req, res) => {
   });
 });
 
-// Register first device or an invited additional device
+// Register admin device
 app.post('/api/admin/enroll-device', loginLimiter, async (req, res) => {
   const name = clean(req.body?.name, 60);
   const password = req.body?.password;
 
   const setupCode = req.body?.setupCode;
   const inviteCode = req.body?.inviteCode;
+
   const publicJwk = req.body?.publicJwk;
   const deviceId = clean(req.body?.deviceId, 80);
-  const deviceName = clean(req.body?.deviceName, 60) || 'Admin device';
+
+  const deviceName =
+    clean(req.body?.deviceName, 60) || 'Admin device';
 
   if (!name || !await verifySharedPassword(password)) {
     return res.status(401).json({
@@ -387,7 +393,6 @@ app.post('/api/admin/enroll-device', loginLimiter, async (req, res) => {
     });
   }
 
-  // Additional devices must use an invitation code
   if (
     typeof inviteCode === 'string' &&
     inviteCode.length >= 20 &&
@@ -403,7 +408,7 @@ app.post('/api/admin/enroll-device', loginLimiter, async (req, res) => {
 
       const devices = adminDeviceList(data);
 
-      if (devices.length >= 3) {
+      if (devices.length >= MAX_ADMIN_DEVICES) {
         outcome = 'limit';
         return;
       }
@@ -412,9 +417,10 @@ app.post('/api/admin/enroll-device', loginLimiter, async (req, res) => {
         ? data.adminInvites
         : [];
 
-      const index = invites.findIndex(i =>
-        i.hash === wantedHash &&
-        Number(i.expiresAt) > Date.now()
+      const index = invites.findIndex(
+        i =>
+          i.hash === wantedHash &&
+          Number(i.expiresAt) > Date.now()
       );
 
       if (index < 0) {
@@ -427,7 +433,9 @@ app.post('/api/admin/enroll-device', loginLimiter, async (req, res) => {
         return;
       }
 
-      const nextInvites = invites.filter((_, i) => i !== index);
+      const nextInvites = invites.filter(
+        (_, i) => i !== index
+      );
 
       const nextDevices = [
         ...devices,
@@ -444,12 +452,14 @@ app.post('/api/admin/enroll-device', loginLimiter, async (req, res) => {
         adminDevices: nextDevices,
         adminInvites: nextInvites,
         securityVersion: 2
-      }, { merge: true });
+      }, {
+        merge: true
+      });
     });
 
     if (outcome === 'limit') {
       return res.status(409).json({
-        error: 'The maximum of 3 admin devices is already registered.'
+        error: 'The maximum of 10 admin devices is already registered.'
       });
     }
 
@@ -472,7 +482,6 @@ app.post('/api/admin/enroll-device', loginLimiter, async (req, res) => {
     });
   }
 
-  // Initial device setup using the one-time setup code
   const initialCode =
     typeof setupCode === 'string'
       ? setupCode
@@ -514,7 +523,9 @@ app.post('/api/admin/enroll-device', loginLimiter, async (req, res) => {
       }],
       setupCodeUsed: true,
       securityVersion: 2
-    }, { merge: true });
+    }, {
+      merge: true
+    });
   });
 
   if (outcome === 'already') {
@@ -530,7 +541,7 @@ app.post('/api/admin/enroll-device', loginLimiter, async (req, res) => {
   });
 });
 
-// Create a one-time invitation for another device
+// Create admin device invitation
 app.post('/api/admin/device-invites', auth, adminOnly, async (_req, res) => {
   const code = crypto.randomBytes(32).toString('hex');
 
@@ -553,7 +564,7 @@ app.post('/api/admin/device-invites', auth, adminOnly, async (_req, res) => {
       return;
     }
 
-    if (devices.length >= 3) {
+    if (devices.length >= MAX_ADMIN_DEVICES) {
       outcome = 'limit';
       return;
     }
@@ -568,7 +579,9 @@ app.post('/api/admin/device-invites', auth, adminOnly, async (_req, res) => {
       adminDevices: devices,
       adminInvites: [...active, invite],
       securityVersion: 2
-    }, { merge: true });
+    }, {
+      merge: true
+    });
   });
 
   if (outcome === 'none') {
@@ -579,20 +592,19 @@ app.post('/api/admin/device-invites', auth, adminOnly, async (_req, res) => {
 
   if (outcome === 'limit') {
     return res.status(409).json({
-      error: 'All 3 admin device slots are in use. Remove a device first.'
+      error: 'All 10 admin device slots are in use. Remove a device first.'
     });
   }
-
-  const updated = await sysRef.get();
 
   res.status(201).json({
     inviteCode: code,
     expiresIn: 600,
-    remainingSlots: 3 - updated.data().adminDevices.length
+    remainingSlots:
+      MAX_ADMIN_DEVICES - (await sysRef.get()).data().adminDevices.length
   });
 });
 
-// List registered admin devices
+// List admin devices
 app.get('/api/admin/devices', auth, adminOnly, async (_req, res) => {
   const snap = await sysRef.get();
   const data = snap.exists ? snap.data() : {};
@@ -612,7 +624,7 @@ app.get('/api/admin/devices', auth, adminOnly, async (_req, res) => {
   });
 });
 
-// Remove a registered admin device
+// Remove admin device
 app.delete('/api/admin/devices/:id', auth, adminOnly, async (req, res) => {
   const id = clean(req.params.id, 80);
 
@@ -639,26 +651,78 @@ app.delete('/api/admin/devices/:id', auth, adminOnly, async (req, res) => {
   await sysRef.set({
     adminDevices: devices.filter(d => d.id !== id),
     securityVersion: 2
-  }, { merge: true });
-
-  res.json({ ok: true });
-});
-
-// Classes
-app.get('/api/classes', auth, async (_req, res) => {
-  const s = await db.collection('classes')
-    .orderBy('name')
-    .get();
+  }, {
+    merge: true
+  });
 
   res.json({
-    classes: s.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    }))
+    ok: true
   });
 });
 
-// Students
+// Class order
+const CLASS_ORDER = [
+  'class 4',
+  'class 5',
+  'class 6',
+  'class 7',
+  '7 bseb',
+  '8 cbse',
+  '8 bseb'
+];
+
+const classRank = name => {
+  const i = CLASS_ORDER.indexOf(
+    String(name || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase()
+  );
+
+  return i < 0 ? 999 : i;
+};
+
+// Get classes
+app.get('/api/classes', auth, async (_req, res) => {
+  const s = await db.collection('classes').get();
+
+  const classes = s.docs.map(d => ({
+    id: d.id,
+    ...d.data()
+  }));
+
+  classes.sort((a, b) => {
+    const ao = Number.isFinite(Number(a.order))
+      ? Number(a.order)
+      : null;
+
+    const bo = Number.isFinite(Number(b.order))
+      ? Number(b.order)
+      : null;
+
+    if (ao !== null && bo !== null) return ao - bo;
+    if (ao !== null) return -1;
+    if (bo !== null) return 1;
+
+    return (
+      classRank(a.name) - classRank(b.name) ||
+      String(a.name).localeCompare(
+        String(b.name),
+        undefined,
+        {
+          numeric: true,
+          sensitivity: 'base'
+        }
+      )
+    );
+  });
+
+  res.json({
+    classes
+  });
+});
+
+// Get students
 app.get('/api/students', auth, async (req, res) => {
   let q = db.collection('students');
 
@@ -672,15 +736,185 @@ app.get('/api/students', auth, async (req, res) => {
 
   const s = await q.get();
 
+  const students = s.docs.map(d => ({
+    id: d.id,
+    ...d.data()
+  }));
+
+  students.sort((a, b) => {
+    const ao = Number.isFinite(Number(a.order))
+      ? Number(a.order)
+      : null;
+
+    const bo = Number.isFinite(Number(b.order))
+      ? Number(b.order)
+      : null;
+
+    if (ao !== null && bo !== null) return ao - bo;
+    if (ao !== null) return -1;
+    if (bo !== null) return 1;
+
+    return String(a.name).localeCompare(
+      String(b.name),
+      undefined,
+      {
+        sensitivity: 'base'
+      }
+    );
+  });
+
   res.json({
-    students: s.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    }))
+    students
   });
 });
 
-// Attendance records
+// Save manual class order
+app.put('/api/admin/order/classes', auth, adminOnly, async (req, res) => {
+  const ids = Array.isArray(req.body?.ids)
+    ? req.body.ids.map(x => clean(x, 128))
+    : [];
+
+  const snap = await db.collection('classes').get();
+  const actual = snap.docs.map(d => d.id);
+
+  if (
+    ids.length !== actual.length ||
+    new Set(ids).size !== ids.length ||
+    ids.some(id => !actual.includes(id))
+  ) {
+    return res.status(400).json({
+      error: 'Class order is outdated. Refresh and try again.'
+    });
+  }
+
+  for (let start = 0; start < ids.length; start += 400) {
+    const batch = db.batch();
+
+    ids.slice(start, start + 400).forEach((id, i) => {
+      batch.update(
+        db.collection('classes').doc(id),
+        {
+          order: start + i
+        }
+      );
+    });
+
+    await batch.commit();
+  }
+
+  res.json({
+    ok: true
+  });
+});
+
+// Save manual student order
+app.put('/api/admin/order/students', auth, adminOnly, async (req, res) => {
+  const classId = clean(req.body?.classId, 128);
+
+  const ids = Array.isArray(req.body?.ids)
+    ? req.body.ids.map(x => clean(x, 128))
+    : [];
+
+  if (!classId) {
+    return res.status(400).json({
+      error: 'Choose a class.'
+    });
+  }
+
+  const snap = await db.collection('students')
+    .where('classId', '==', classId)
+    .get();
+
+  const actual = snap.docs.map(d => d.id);
+
+  if (
+    ids.length !== actual.length ||
+    new Set(ids).size !== ids.length ||
+    ids.some(id => !actual.includes(id))
+  ) {
+    return res.status(400).json({
+      error: 'Student order is outdated. Refresh and try again.'
+    });
+  }
+
+  for (let start = 0; start < ids.length; start += 400) {
+    const batch = db.batch();
+
+    ids.slice(start, start + 400).forEach((id, i) => {
+      batch.update(
+        db.collection('students').doc(id),
+        {
+          order: start + i
+        }
+      );
+    });
+
+    await batch.commit();
+  }
+
+  res.json({
+    ok: true
+  });
+});
+
+// Upload student photo
+app.put('/api/admin/students/:id/photo', auth, adminOnly, async (req, res) => {
+  const id = clean(req.params.id, 128);
+  const photoData = req.body?.photoData;
+
+  if (
+    typeof photoData !== 'string' ||
+    !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photoData) ||
+    photoData.length > 190000
+  ) {
+    return res.status(400).json({
+      error: 'Choose a smaller JPG photo (maximum about 140 KB).'
+    });
+  }
+
+  const ref = db.collection('students').doc(id);
+  const snap = await ref.get();
+
+  if (!snap.exists) {
+    return res.status(404).json({
+      error: 'Student not found.'
+    });
+  }
+
+  await ref.update({
+    photoData,
+    photoUpdatedAt: new Date().toISOString()
+  });
+
+  res.json({
+    ok: true
+  });
+});
+
+// Delete student photo
+app.delete('/api/admin/students/:id/photo', auth, adminOnly, async (req, res) => {
+  const ref = db.collection('students')
+    .doc(clean(req.params.id, 128));
+
+  const snap = await ref.get();
+
+  if (!snap.exists) {
+    return res.status(404).json({
+      error: 'Student not found.'
+    });
+  }
+
+  await ref.update({
+    photoData: FieldValue.delete(),
+    photoUpdatedAt: new Date().toISOString()
+  });
+
+  res.json({
+    ok: true
+  });
+});
+
+// Get attendance
 app.get('/api/attendance', auth, async (req, res) => {
   const classId = clean(req.query.classId, 128);
   const date = clean(req.query.date, 10);
@@ -747,7 +981,9 @@ app.post('/api/attendance', auth, async (req, res) => {
       status,
       updatedAt: new Date().toISOString(),
       updatedBy: req.session.name
-    }, { merge: true });
+    }, {
+      merge: true
+    });
 
   res.json({
     ok: true,
@@ -758,12 +994,13 @@ app.post('/api/attendance', auth, async (req, res) => {
 // Undo attendance
 app.delete('/api/attendance/:id', auth, async (req, res) => {
   const id = clean(req.params.id, 300);
-
   const ref = db.collection('attendance').doc(id);
   const snap = await ref.get();
 
   if (!snap.exists) {
-    return res.json({ ok: true });
+    return res.json({
+      ok: true
+    });
   }
 
   if (
@@ -777,10 +1014,12 @@ app.delete('/api/attendance/:id', auth, async (req, res) => {
 
   await ref.delete();
 
-  res.json({ ok: true });
+  res.json({
+    ok: true
+  });
 });
 
-// Add class
+// Create class
 app.post('/api/admin/classes', auth, adminOnly, async (req, res) => {
   const name = clean(req.body?.name, 60);
 
@@ -790,21 +1029,49 @@ app.post('/api/admin/classes', auth, adminOnly, async (req, res) => {
     });
   }
 
-  const ref = await db.collection('classes').add({
+  const all = await db.collection('classes').get();
+
+  const allOrdered = all.docs.every(d =>
+    Number.isFinite(Number(d.data().order)) &&
+    d.data().order !== undefined
+  );
+
+  const order = allOrdered
+    ? Math.max(-1, ...all.docs.map(d => Number(d.data().order))) + 1
+    : null;
+
+  const data = {
     name,
     studentCount: 0,
     createdAt: new Date().toISOString()
-  });
+  };
+
+  if (order !== null) {
+    data.order = order;
+  }
+
+  const ref = await db.collection('classes').add(data);
 
   res.status(201).json({
     id: ref.id,
-    name
+    name,
+    order
   });
 });
 
-// Delete class
+// Delete class and current student roster.
+// Historical attendance documents are preserved.
 app.delete('/api/admin/classes/:id', auth, adminOnly, async (req, res) => {
   const id = clean(req.params.id, 128);
+
+  const classRef = db.collection('classes').doc(id);
+  const classSnap = await classRef.get();
+
+  if (!classSnap.exists) {
+    return res.status(404).json({
+      error: 'Class not found.'
+    });
+  }
 
   const students = await db.collection('students')
     .where('classId', '==', id)
@@ -814,15 +1081,43 @@ app.delete('/api/admin/classes/:id', auth, adminOnly, async (req, res) => {
     .where('classId', '==', id)
     .get();
 
-  if (!students.empty || !attendance.empty) {
-    return res.status(409).json({
-      error: 'This class still has students or attendance. Remove/move those records first.'
+  const className = classSnap.data().name || 'Deleted class';
+
+  const refs = [
+    ...students.docs.map(d => d.ref),
+    classRef
+  ];
+
+  for (let start = 0; start < refs.length; start += 400) {
+    const batch = db.batch();
+
+    refs.slice(start, start + 400).forEach(ref => {
+      batch.delete(ref);
     });
+
+    await batch.commit();
   }
 
-  await db.collection('classes').doc(id).delete();
+  for (let start = 0; start < attendance.docs.length; start += 400) {
+    const batch = db.batch();
 
-  res.json({ ok: true });
+    attendance.docs.slice(start, start + 400).forEach(doc => {
+      batch.set(doc.ref, {
+        className,
+        archivedClass: true
+      }, {
+        merge: true
+      });
+    });
+
+    await batch.commit();
+  }
+
+  res.json({
+    ok: true,
+    deletedStudents: students.size,
+    preservedAttendance: true
+  });
 });
 
 // Add student
@@ -845,17 +1140,38 @@ app.post('/api/admin/students', auth, adminOnly, async (req, res) => {
     });
   }
 
-  const ref = db.collection('students').doc();
-  const batch = db.batch();
+  const existing = await db.collection('students')
+    .where('classId', '==', classId)
+    .get();
 
-  batch.set(ref, {
+  const allOrdered = existing.docs.every(d =>
+    Number.isFinite(Number(d.data().order)) &&
+    d.data().order !== undefined
+  );
+
+  const order = allOrdered
+    ? Math.max(-1, ...existing.docs.map(d => Number(d.data().order))) + 1
+    : null;
+
+  const ref = db.collection('students').doc();
+
+  const studentData = {
     name,
     classId,
     createdAt: new Date().toISOString()
-  });
+  };
+
+  if (order !== null) {
+    studentData.order = order;
+  }
+
+  const batch = db.batch();
+
+  batch.set(ref, studentData);
 
   batch.update(c, {
-    studentCount: (Number(snap.data().studentCount) || 0) + 1
+    studentCount:
+      (Number(snap.data().studentCount) || 0) + 1
   });
 
   await batch.commit();
@@ -863,7 +1179,8 @@ app.post('/api/admin/students', auth, adminOnly, async (req, res) => {
   res.status(201).json({
     id: ref.id,
     name,
-    classId
+    classId,
+    order
   });
 });
 
@@ -910,7 +1227,7 @@ app.delete('/api/admin/students/:id', auth, adminOnly, async (req, res) => {
   });
 });
 
-// Admin dashboard summary
+// Admin summary
 app.get('/api/admin/summary', auth, adminOnly, async (_req, res) => {
   const [c, s, a] = await Promise.all([
     db.collection('classes').get(),
